@@ -167,7 +167,13 @@ class CameraFragment : Fragment() {
             pen.strokeWidth = 4F
             pen.style = Paint.Style.STROKE
             val box = it.box
-            canvas.drawRect(box, pen)
+            val drawBox = RectF().apply {
+                left = (box.left - (box.left - box.right) / 3).toFloat()
+                right = (box.right - (box.left - box.right) / 2.5).toFloat()
+                top = (box.top + (box.top - box.bottom) / 2).toFloat()
+                bottom = (box.bottom + (box.top - box.bottom) / 2).toFloat()
+            }
+            canvas.drawRect(drawBox, pen)
 
             val tagSize = Rect(0, 0, 0, 0)
 
@@ -184,8 +190,8 @@ class CameraFragment : Fragment() {
             var margin = (box.width() - tagSize.width()) / 2.0F
             if (margin < 0F) margin = 0F
             canvas.drawText(
-                it.text, box.left + margin,
-                box.top + tagSize.height().times(1F), pen
+                it.text, drawBox.left + margin,
+                drawBox.top + tagSize.height().times(1F), pen
             )
         }
         return outputBitmap
