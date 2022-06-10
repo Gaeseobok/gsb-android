@@ -33,6 +33,9 @@ android {
     viewBinding {
         enabled = true
     }
+    aaptOptions {
+        noCompress "tflite"
+    }
 }
 
 dependencies {
@@ -57,7 +60,8 @@ dependencies {
     implementation "androidx.camera:camera-extensions:${camerax_version}"
 
     // 커스텀 모델 사용
-    // implementation 'com.google.mlkit:object-detection-custom:17.0.0'
+//    implementation 'com.google.mlkit:object-detection-custom:17.0.0'
+//    implementation 'com.google.mlkit:image-labeling-custom:17.0.1'
     // 기본 제공 모델 사용
     implementation 'com.google.mlkit:object-detection:17.0.0'
 }

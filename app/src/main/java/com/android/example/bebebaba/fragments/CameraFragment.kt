@@ -2,17 +2,14 @@ package com.android.example.bebebaba.fragments
 
 import android.annotation.SuppressLint
 import android.graphics.*
-import android.graphics.drawable.ShapeDrawable
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import androidx.camera.core.*
 import androidx.camera.core.Camera
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -72,6 +69,16 @@ class CameraFragment : Fragment() {
         val options = ObjectDetectorOptions.Builder().enableClassification().build()
         objectDetector = ObjectDetection.getClient(options)
 
+//        커스텀 모델 빌드
+//        val localModel = LocalModel.Builder().setAssetFilePath("model.tflite").build()
+//        val customDetectorOptions = CustomObjectDetectorOptions.Builder(localModel)
+//            .setDetectorMode(CustomObjectDetectorOptions.STREAM_MODE)
+//            .enableClassification()
+//            .setClassificationConfidenceThreshold(0.5f)
+//            .setMaxPerObjectLabelCount(2)
+//            .build()
+//        objectDetector = ObjectDetection.getClient(customDetectorOptions)
+
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         fragCameraBinding.viewFinder.post {
@@ -104,10 +111,9 @@ class CameraFragment : Fragment() {
 
                     objectDetector.process(image)
                         .addOnSuccessListener { detectedObjects ->
-                            onResults(detectedObjects, image.width, image.height)
-                            imageProxy.close()
+                            onResults(detectedObjects, image)
                         }
-                        .addOnFailureListener { e ->
+                        .addOnCompleteListener {
                             imageProxy.close()
                         }
                 }
@@ -125,11 +131,11 @@ class CameraFragment : Fragment() {
 
     fun onResults(
         detectedObjects: List<DetectedObject>,
-        imageWidth: Int,
-        imageHeight: Int,
+        image: InputImage
     ) {
         val results = detectedObjects.map {
             var text = "Unknown"
+            Log.v("box", "boundingBox: ${it.boundingBox}")
 
             if (it.labels.isNotEmpty()) {
                 val firstLabel = it.labels.first()
@@ -140,19 +146,25 @@ class CameraFragment : Fragment() {
 
         Log.v("results", results.toString())
 
-        val paintedResults = drawDetectionResult(results, imageWidth, imageHeight)
+        val paintedResults = drawDetectionResult(results, image.width, image.height)
 
         inputImageView.setImageBitmap(paintedResults)
+
+        inputImageView.invalidate()
     }
 
-    private fun drawDetectionResult(results: List<BoxWithText>, imageWidth: Int, imageHeight: Int): Bitmap {
+    private fun drawDetectionResult(
+        results: List<BoxWithText>,
+        imageWidth: Int,
+        imageHeight: Int
+    ): Bitmap {
         val outputBitmap = Bitmap.createBitmap(imageWidth, imageHeight, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(outputBitmap)
         val pen = Paint()
 
         results.forEach {
             pen.color = Color.RED
-            pen.strokeWidth = 8F
+            pen.strokeWidth = 4F
             pen.style = Paint.Style.STROKE
             val box = it.box
             canvas.drawRect(box, pen)
@@ -160,10 +172,10 @@ class CameraFragment : Fragment() {
             val tagSize = Rect(0, 0, 0, 0)
 
             pen.style = Paint.Style.FILL_AND_STROKE
-            pen.color = Color.YELLOW
+            pen.color = Color.GREEN
             pen.strokeWidth = 2F
 
-            pen.textSize = 86F
+            pen.textSize = 46F
             pen.getTextBounds(it.text, 0, it.text.length, tagSize)
             val fontSize: Float = pen.textSize * box.width() / tagSize.width()
 
